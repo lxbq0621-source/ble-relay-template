@@ -82,7 +82,7 @@
 - 加热：指令格式 [请替换，没有就写"无"]
 - 其他功能：[请替换]
 
-无声音频保活 URL：https://img.heliar.top/file/1772516513350_30min-osbvow_2.mp4
+无声音频保活 URL：https://img.baibai.cv/f/dZymTQ/30min-osbvow%202.mp4
 
 MCP 轮询接口说明：
 - 路径：/toy-next
