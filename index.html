@@ -314,9 +314,9 @@
     </label>
   </div>
   <div class="row" style="margin-top:12px;">
-    <input type="text" id="pollPath" value="/poll" placeholder="轮询接口路径，如 /poll">
+    <input type="text" id="pollPath" value="/toy-next?secret=12345" placeholder="轮询接口路径，如 /toy-next?secret=xxx">
   </div>
-  <div class="hint">轮询接口预期返回 JSON，例如 {"cmd":"intensity","value":50} 或 {"cmd":"pattern","mode":1,"level":3} 或 {"cmd":"stop"}；无指令时返回 {"cmd":null} 或 204。若你的服务器格式不同，修改下方脚本中的 parsePollResponse 函数即可。</div>
+  <div class="hint">后端使用的是 /toy-next 接口（需带 secret 参数，默认 123456，若在 Railway 后台设置了 BRIDGE_SECRET 环境变量请改成对应值），返回格式为 {"command":{"action":"intensity","value":50,...}} 或 {"command":null}。若你的服务器格式不同，修改下方脚本中的 parsePollResponse 函数即可。</div>
 </div>
 
 <!-- 无声音乐保活 -->
@@ -544,9 +544,18 @@
   }
 
   // ===== 轮询 =====
+  // 后端 /toy-next 返回格式: {"command":{"action":"intensity","value":50,"received":...}} 或 {"command":null}
+  // 统一转换成内部使用的 {cmd, value, mode, level} 结构
   function parsePollResponse(data){
-    if(!data || data.cmd == null) return null;
-    return data;
+    if(!data || !data.command) return null;
+    const c = data.command;
+    if(!c.action) return null;
+    return {
+      cmd: c.action,
+      value: c.value,
+      mode: c.mode,
+      level: c.level
+    };
   }
 
   function startPolling(){
@@ -554,7 +563,7 @@
     dotPoll.classList.add("on");
     pollTimer = setInterval(async () => {
       if(!mcpConnected) return;
-      const path = $("pollPath").value.trim() || "/poll";
+      const path = $("pollPath").value.trim() || "/toy-next?secret=123456";
       try{
         const resp = await fetch(mcpBaseUrl + path, { method: "GET" });
         if(resp.status === 204){
