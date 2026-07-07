@@ -563,7 +563,7 @@
     dotPoll.classList.add("on");
     pollTimer = setInterval(async () => {
       if(!mcpConnected) return;
-      const path = $("pollPath").value.trim() || "/toy-next?secret=123456";
+      const path = $("pollPath").value.trim() || "/toy-next?secret=12345";
       try{
         const resp = await fetch(mcpBaseUrl + path, { method: "GET" });
         if(resp.status === 204){
