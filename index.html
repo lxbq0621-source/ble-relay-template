@@ -314,9 +314,9 @@
     </label>
   </div>
   <div class="row" style="margin-top:12px;">
-    <input type="text" id="pollPath" value="/toy-next?secret=12345" placeholder="轮询接口路径，如 /toy-next?secret=xxx">
+    <input type="text" id="pollPath" value="/toy-next?secret=123456" placeholder="轮询接口路径，如 /toy-next?secret=xxx">
   </div>
-  <div class="hint">后端使用的是 /toy-next 接口（需带 secret 参数，默认 12345，若在 Railway 后台设置了 BRIDGE_SECRET 环境变量请改成对应值），返回格式为 {"command":{"action":"intensity","value":50,...}} 或 {"command":null}。若你的服务器格式不同，修改下方脚本中的 parsePollResponse 函数即可。</div>
+  <div class="hint">后端使用的是 /toy-next 接口（需带 secret 参数，默认 123456，若在 Railway 后台设置了 BRIDGE_SECRET 环境变量请改成对应值），返回格式为 {"command":{"action":"intensity","value":50,...}} 或 {"command":null}。若你的服务器格式不同，修改下方脚本中的 parsePollResponse 函数即可。</div>
 </div>
 
 <!-- 无声音乐保活 -->
@@ -350,7 +350,7 @@
   const CONFIG = {
     serviceUUID: 0xFFE0,
     characteristicUUID: 0xFFE1,
-    deviceName: "SL278K",
+    deviceName: "HS141B",
     keepAliveIntervalMs: 1500,
     pollIntervalMs: 300,
   };
@@ -410,7 +410,7 @@
     try{
       log("正在请求蓝牙设备...", "dim");
       bleDevice = await navigator.bluetooth.requestDevice({
-        filters: [{ services: [CONFIG.serviceUUID] }],
+        filters: [{ name: CONFIG.deviceName }],
         optionalServices: [CONFIG.serviceUUID]
       });
       log(`已选择设备: ${bleDevice.name || "(未知名称)"}`, "ok");
@@ -567,7 +567,7 @@
     dotPoll.classList.add("on");
     pollTimer = setInterval(async () => {
       if(!mcpConnected) return;
-      const path = $("pollPath").value.trim() || "/toy-next?secret=12345";
+      const path = $("pollPath").value.trim() || "/toy-next?secret=123456";
       try{
         const resp = await fetch(mcpBaseUrl + path, { method: "GET" });
         if(resp.status === 204){
