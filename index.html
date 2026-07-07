@@ -1,0 +1,663 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SL278K 蓝牙中继控制台</title>
+<style>
+  :root{
+    --bg:#0f1115;
+    --panel:#171a21;
+    --panel-2:#1e222b;
+    --border:#2a2f3a;
+    --text:#e6e8ec;
+    --dim:#8b93a3;
+    --accent:#4f8cff;
+    --accent-2:#00d9a3;
+    --danger:#ff5c6a;
+    --warn:#ffb84f;
+    --mono:'SFMono-Regular',Consolas,'Liberation Mono',Menlo,monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    padding:16px;
+    padding-bottom:40px;
+  }
+  h1{
+    font-size:18px;
+    margin:0 0 4px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  .sub{
+    color:var(--dim);
+    font-size:12px;
+    margin-bottom:16px;
+  }
+  .status-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:16px;
+    flex-wrap:wrap;
+  }
+  .pill{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:999px;
+    padding:6px 12px;
+    font-size:12px;
+    color:var(--dim);
+  }
+  .dot{
+    width:8px;height:8px;border-radius:50%;
+    background:var(--danger);
+    flex-shrink:0;
+  }
+  .dot.on{background:var(--accent-2);}
+  .dot.warn{background:var(--warn);}
+  .card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:14px;
+  }
+  .card h2{
+    font-size:13px;
+    font-weight:600;
+    margin:0 0 12px;
+    color:var(--dim);
+    text-transform:uppercase;
+    letter-spacing:.05em;
+  }
+  .row{
+    display:flex;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .row:last-child{margin-bottom:0;}
+  input[type=text], input[type=number]{
+    flex:1;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:14px;
+    min-width:0;
+  }
+  select{
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    color:var(--text);
+    border-radius:8px;
+    padding:10px 12px;
+    font-size:14px;
+    flex:1;
+  }
+  button{
+    background:var(--accent);
+    color:#fff;
+    border:none;
+    border-radius:8px;
+    padding:10px 16px;
+    font-size:14px;
+    font-weight:600;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  button:active{opacity:.8;}
+  button.secondary{
+    background:var(--panel-2);
+    color:var(--text);
+    border:1px solid var(--border);
+  }
+  button.danger{background:var(--danger);}
+  button.ghost{
+    background:transparent;
+    border:1px solid var(--border);
+    color:var(--dim);
+  }
+  button:disabled{
+    opacity:.4;
+    cursor:not-allowed;
+  }
+  .slider-wrap{
+    display:flex;
+    align-items:center;
+    gap:12px;
+  }
+  input[type=range]{
+    flex:1;
+    accent-color:var(--accent);
+    height:36px;
+  }
+  .val{
+    font-family:var(--mono);
+    font-size:20px;
+    font-weight:700;
+    min-width:52px;
+    text-align:right;
+    color:var(--accent-2);
+  }
+  .grid2{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .btn-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+  }
+  .log{
+    background:#000;
+    border-radius:10px;
+    padding:10px;
+    height:220px;
+    overflow-y:auto;
+    font-family:var(--mono);
+    font-size:11px;
+    line-height:1.5;
+    border:1px solid var(--border);
+  }
+  .log div{
+    white-space:pre-wrap;
+    word-break:break-all;
+    border-bottom:1px solid #16181d;
+    padding:2px 0;
+  }
+  .log .err{color:var(--danger);}
+  .log .ok{color:var(--accent-2);}
+  .log .warn{color:var(--warn);}
+  .log .dim{color:var(--dim);}
+  .toggle-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .switch{
+    position:relative;
+    width:44px;height:24px;
+    flex-shrink:0;
+  }
+  .switch input{opacity:0;width:0;height:0;}
+  .slider-toggle{
+    position:absolute;cursor:pointer;inset:0;
+    background:var(--panel-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+    transition:.2s;
+  }
+  .slider-toggle:before{
+    content:"";
+    position:absolute;
+    height:18px;width:18px;
+    left:2px;top:2px;
+    background:var(--dim);
+    border-radius:50%;
+    transition:.2s;
+  }
+  input:checked + .slider-toggle{background:var(--accent);}
+  input:checked + .slider-toggle:before{transform:translateX(20px);background:#fff;}
+  audio{display:none;}
+  .hint{font-size:11px;color:var(--dim);margin-top:6px;}
+</style>
+</head>
+<body>
+
+<h1>🔗 SL278K 蓝牙中继控制台</h1>
+<div class="sub">设备名: SL278K · 服务 UUID: FFE0 · 特征 UUID: FFE1</div>
+
+<div class="status-row">
+  <div class="pill"><span id="dotMcp" class="dot"></span>MCP 服务器</div>
+  <div class="pill"><span id="dotBle" class="dot"></span>蓝牙设备</div>
+  <div class="pill"><span id="dotPoll" class="dot"></span>轮询</div>
+  <div class="pill"><span id="dotAudio" class="dot"></span>保活音频</div>
+</div>
+
+<!-- MCP 服务器连接 -->
+<div class="card">
+  <h2>MCP 服务器</h2>
+  <div class="row">
+    <input type="text" id="mcpUrl" placeholder="https://your-relay.example.workers.dev">
+  </div>
+  <div class="row">
+    <button id="btnMcpConnect">连接 MCP</button>
+    <button id="btnMcpDisconnect" class="secondary" disabled>断开</button>
+  </div>
+  <div class="hint">连接成功后会自动按下方"轮询"设置从服务器拉取指令。若你的 relay 使用不同的接口路径，请在下方"轮询设置"中调整。</div>
+</div>
+
+<!-- 蓝牙连接 -->
+<div class="card">
+  <h2>蓝牙设备</h2>
+  <div class="row">
+    <button id="btnBleConnect">连接蓝牙</button>
+    <button id="btnBleDisconnect" class="secondary" disabled>断开蓝牙</button>
+  </div>
+  <div class="hint" id="bleInfo">尚未连接</div>
+</div>
+
+<!-- 强度控制 -->
+<div class="card">
+  <h2>强度控制 (0-100)</h2>
+  <div class="slider-wrap">
+    <input type="range" id="intensitySlider" min="0" max="100" value="0">
+    <div class="val" id="intensityVal">0</div>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button id="btnSendIntensity">发送强度</button>
+    <button id="btnStop" class="danger">停止 (归零)</button>
+  </div>
+</div>
+
+<!-- 花样控制 -->
+<div class="card">
+  <h2>花样控制</h2>
+  <div class="grid2">
+    <select id="modeSelect">
+      <option value="1">模式 1</option>
+      <option value="2">模式 2</option>
+      <option value="3">模式 3</option>
+      <option value="4">模式 4</option>
+      <option value="5">模式 5</option>
+      <option value="6">模式 6</option>
+      <option value="7">模式 7</option>
+      <option value="8">模式 8</option>
+    </select>
+    <select id="levelSelect">
+      <option value="1">等级 1</option>
+      <option value="2">等级 2</option>
+      <option value="3">等级 3</option>
+      <option value="4">等级 4</option>
+      <option value="5">等级 5</option>
+    </select>
+  </div>
+  <div class="row" style="margin-top:10px;">
+    <button id="btnSendPattern">发送花样</button>
+  </div>
+</div>
+
+<!-- 测试 -->
+<div class="card">
+  <h2>测试</h2>
+  <div class="btn-grid">
+    <button class="secondary" id="btnTestLow">测试低强度 (20)</button>
+    <button class="secondary" id="btnTestMid">测试中强度 (50)</button>
+  </div>
+</div>
+
+<!-- 续命 / 轮询设置 -->
+<div class="card">
+  <h2>续命 &amp; 轮询设置</h2>
+  <div class="row toggle-row">
+    <span>自动续命（每 1500ms 重发上一条指令）</span>
+    <label class="switch">
+      <input type="checkbox" id="keepAliveToggle" checked>
+      <span class="slider-toggle"></span>
+    </label>
+  </div>
+  <div class="row toggle-row" style="margin-top:12px;">
+    <span>MCP 轮询（每 300ms 拉取指令，静默运行）</span>
+    <label class="switch">
+      <input type="checkbox" id="pollToggle" checked>
+      <span class="slider-toggle"></span>
+    </label>
+  </div>
+  <div class="row" style="margin-top:12px;">
+    <input type="text" id="pollPath" value="/poll" placeholder="轮询接口路径，如 /poll">
+  </div>
+  <div class="hint">轮询接口预期返回 JSON，例如 {"cmd":"intensity","value":50} 或 {"cmd":"pattern","mode":1,"level":3} 或 {"cmd":"stop"}；无指令时返回 {"cmd":null} 或 204。若你的服务器格式不同，修改下方脚本中的 parsePollResponse 函数即可。</div>
+</div>
+
+<!-- 无声音乐保活 -->
+<div class="card">
+  <h2>无声音乐保活</h2>
+  <div class="row toggle-row">
+    <span>播放无声音乐防止手机锁屏/后台挂起</span>
+    <label class="switch">
+      <input type="checkbox" id="audioToggle" checked>
+      <span class="slider-toggle"></span>
+    </label>
+  </div>
+  <audio id="keepAliveAudio" src="https://img.heliar.top/file/1772516513350_30min-osbvow_2.mp4" loop playsinline></audio>
+  <div class="hint">首次启用需要用户手势触发播放（浏览器限制），点击开关或页面任意按钮后会自动尝试播放。</div>
+</div>
+
+<!-- 日志 -->
+<div class="card">
+  <h2>日志</h2>
+  <div class="log" id="log"></div>
+  <div class="row" style="margin-top:10px;">
+    <button class="ghost" id="btnClearLog">清空日志</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ===== 配置 =====
+  const CONFIG = {
+    serviceUUID: 0xFFE0,
+    characteristicUUID: 0xFFE1,
+    deviceName: "SL278K",
+    keepAliveIntervalMs: 1500,
+    pollIntervalMs: 300,
+  };
+
+  // ===== 状态 =====
+  let bleDevice = null;
+  let bleServer = null;
+  let bleChar = null;
+  let mcpBaseUrl = "";
+  let mcpConnected = false;
+  let lastCommand = null; // Uint8Array，用于续命重发
+  let keepAliveTimer = null;
+  let pollTimer = null;
+
+  // ===== DOM =====
+  const $ = (id) => document.getElementById(id);
+  const dotMcp = $("dotMcp"), dotBle = $("dotBle"), dotPoll = $("dotPoll"), dotAudio = $("dotAudio");
+  const logEl = $("log");
+  const bleInfo = $("bleInfo");
+
+  // ===== 日志 =====
+  function log(msg, type){
+    const line = document.createElement("div");
+    const t = new Date().toLocaleTimeString("zh-CN", {hour12:false});
+    line.className = type || "dim";
+    line.textContent = `[${t}] ${msg}`;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+    while(logEl.children.length > 300){
+      logEl.removeChild(logEl.firstChild);
+    }
+  }
+  $("btnClearLog").onclick = () => { logEl.innerHTML = ""; };
+
+  // ===== 指令构建 =====
+  function buildIntensityCmd(percent){
+    let p = Math.max(0, Math.min(100, Math.round(percent)));
+    let val = Math.round(p / 100 * 255);
+    val = Math.max(0, Math.min(255, val));
+    return new Uint8Array([0x55, 0x04, 0x00, 0x00, 0x01, val, 0xAA]);
+  }
+  function buildPatternCmd(mode, level){
+    mode = Math.max(1, Math.min(8, mode));
+    level = Math.max(1, Math.min(5, level));
+    return new Uint8Array([0x55, 0x03, 0x00, 0x00, mode, level, 0x00]);
+  }
+  function bytesToHex(bytes){
+    return Array.from(bytes).map(b => b.toString(16).padStart(2,"0")).join(" ").toUpperCase();
+  }
+
+  // ===== 蓝牙连接 =====
+  async function connectBLE(){
+    if(!navigator.bluetooth){
+      log("当前浏览器不支持 Web Bluetooth（需要 Chrome/Edge，且需 HTTPS）", "err");
+      return;
+    }
+    try{
+      log("正在请求蓝牙设备...", "dim");
+      bleDevice = await navigator.bluetooth.requestDevice({
+        filters: [{ services: [CONFIG.serviceUUID] }],
+        optionalServices: [CONFIG.serviceUUID]
+      });
+      log(`已选择设备: ${bleDevice.name || "(未知名称)"}`, "ok");
+
+      bleDevice.addEventListener("gattserverdisconnected", onBleDisconnected);
+
+      bleServer = await bleDevice.gatt.connect();
+      const service = await bleServer.getPrimaryService(CONFIG.serviceUUID);
+      bleChar = await service.getCharacteristic(CONFIG.characteristicUUID);
+
+      dotBle.classList.add("on");
+      bleInfo.textContent = `已连接: ${bleDevice.name || "SL278K"}`;
+      $("btnBleConnect").disabled = true;
+      $("btnBleDisconnect").disabled = false;
+      log("蓝牙连接成功", "ok");
+    }catch(err){
+      log(`蓝牙连接失败: ${err.message}`, "err");
+    }
+  }
+
+  function onBleDisconnected(){
+    dotBle.classList.remove("on");
+    bleInfo.textContent = "已断开";
+    $("btnBleConnect").disabled = false;
+    $("btnBleDisconnect").disabled = true;
+    bleChar = null;
+    bleServer = null;
+    log("蓝牙连接已断开", "warn");
+  }
+
+  function disconnectBLE(){
+    if(bleDevice && bleDevice.gatt.connected){
+      bleDevice.gatt.disconnect();
+    }
+  }
+
+  async function sendRaw(bytes, opts){
+    opts = opts || {};
+    if(!bleChar){
+      if(!opts.silent) log("未连接蓝牙，无法发送", "err");
+      return false;
+    }
+    try{
+      await bleChar.writeValueWithoutResponse(bytes);
+      if(!opts.silent) log(`发送: ${bytesToHex(bytes)}`, "ok");
+      lastCommand = bytes;
+      return true;
+    }catch(err){
+      try{
+        await bleChar.writeValue(bytes);
+        if(!opts.silent) log(`发送: ${bytesToHex(bytes)}`, "ok");
+        lastCommand = bytes;
+        return true;
+      }catch(err2){
+        log(`发送失败: ${err2.message}`, "err");
+        return false;
+      }
+    }
+  }
+
+  // ===== 强度 / 花样 / 测试 / 停止 =====
+  async function sendIntensity(percent){
+    const cmd = buildIntensityCmd(percent);
+    await sendRaw(cmd);
+  }
+  async function sendPattern(mode, level){
+    const cmd = buildPatternCmd(mode, level);
+    await sendRaw(cmd);
+  }
+  async function stopDevice(){
+    const cmd = buildIntensityCmd(0);
+    $("intensitySlider").value = 0;
+    $("intensityVal").textContent = "0";
+    await sendRaw(cmd);
+    log("已发送停止指令", "warn");
+  }
+
+  // ===== 续命 =====
+  function startKeepAlive(){
+    stopKeepAlive();
+    keepAliveTimer = setInterval(async () => {
+      if(!lastCommand || !bleChar) return;
+      try{
+        await bleChar.writeValueWithoutResponse(lastCommand);
+      }catch(err){
+        try{
+          await bleChar.writeValue(lastCommand);
+        }catch(err2){
+          log(`续命发送失败: ${err2.message}`, "err");
+        }
+      }
+    }, CONFIG.keepAliveIntervalMs);
+    log(`续命已启动 (每 ${CONFIG.keepAliveIntervalMs}ms)`, "dim");
+  }
+  function stopKeepAlive(){
+    if(keepAliveTimer){
+      clearInterval(keepAliveTimer);
+      keepAliveTimer = null;
+    }
+  }
+
+  // ===== MCP 服务器连接 =====
+  async function connectMCP(){
+    const url = $("mcpUrl").value.trim().replace(/\/$/, "");
+    if(!url){
+      log("请输入 MCP 服务器地址", "err");
+      return;
+    }
+    mcpBaseUrl = url;
+    try{
+      const resp = await fetch(mcpBaseUrl + "/status", { method: "GET" }).catch(() => null);
+      mcpConnected = true;
+      dotMcp.classList.add("on");
+      $("btnMcpConnect").disabled = true;
+      $("btnMcpDisconnect").disabled = false;
+      log(`MCP 服务器已连接: ${mcpBaseUrl}`, "ok");
+      if($("pollToggle").checked){
+        startPolling();
+      }
+    }catch(err){
+      log(`MCP 连接失败: ${err.message}`, "err");
+    }
+  }
+  function disconnectMCP(){
+    mcpConnected = false;
+    dotMcp.classList.remove("on");
+    $("btnMcpConnect").disabled = false;
+    $("btnMcpDisconnect").disabled = true;
+    stopPolling();
+    log("MCP 服务器已断开", "warn");
+  }
+
+  // ===== 轮询 =====
+  function parsePollResponse(data){
+    if(!data || data.cmd == null) return null;
+    return data;
+  }
+
+  function startPolling(){
+    stopPolling();
+    dotPoll.classList.add("on");
+    pollTimer = setInterval(async () => {
+      if(!mcpConnected) return;
+      const path = $("pollPath").value.trim() || "/poll";
+      try{
+        const resp = await fetch(mcpBaseUrl + path, { method: "GET" });
+        if(resp.status === 204){
+          return;
+        }
+        if(!resp.ok){
+          log(`轮询请求异常: HTTP ${resp.status}`, "err");
+          return;
+        }
+        const data = await resp.json().catch(() => null);
+        const cmd = parsePollResponse(data);
+        if(!cmd) return;
+
+        log(`收到 MCP 指令: ${JSON.stringify(cmd)}`, "ok");
+        if(cmd.cmd === "intensity" && typeof cmd.value === "number"){
+          $("intensitySlider").value = cmd.value;
+          $("intensityVal").textContent = cmd.value;
+          await sendIntensity(cmd.value);
+        }else if(cmd.cmd === "pattern" && cmd.mode && cmd.level){
+          $("modeSelect").value = cmd.mode;
+          $("levelSelect").value = cmd.level;
+          await sendPattern(cmd.mode, cmd.level);
+        }else if(cmd.cmd === "stop"){
+          await stopDevice();
+        }else{
+          log(`未识别的指令类型: ${cmd.cmd}`, "warn");
+        }
+      }catch(err){
+        log(`轮询出错: ${err.message}`, "err");
+      }
+    }, CONFIG.pollIntervalMs);
+    log(`轮询已启动 (每 ${CONFIG.pollIntervalMs}ms，静默模式)`, "dim");
+  }
+  function stopPolling(){
+    if(pollTimer){
+      clearInterval(pollTimer);
+      pollTimer = null;
+    }
+    dotPoll.classList.remove("on");
+  }
+
+  // ===== 无声音乐保活 =====
+  const keepAliveAudio = $("keepAliveAudio");
+  async function startAudioKeepAlive(){
+    try{
+      await keepAliveAudio.play();
+      dotAudio.classList.add("on");
+      log("保活音乐已开始播放", "ok");
+    }catch(err){
+      dotAudio.classList.add("warn");
+      log(`保活音乐播放被拦截，请点击页面任意位置后重试: ${err.message}`, "warn");
+    }
+  }
+  function stopAudioKeepAlive(){
+    keepAliveAudio.pause();
+    dotAudio.classList.remove("on");
+    dotAudio.classList.remove("warn");
+    log("保活音乐已停止", "dim");
+  }
+
+  // ===== 事件绑定 =====
+  $("btnMcpConnect").onclick = connectMCP;
+  $("btnMcpDisconnect").onclick = disconnectMCP;
+  $("btnBleConnect").onclick = connectBLE;
+  $("btnBleDisconnect").onclick = disconnectBLE;
+
+  $("intensitySlider").oninput = (e) => {
+    $("intensityVal").textContent = e.target.value;
+  };
+  $("btnSendIntensity").onclick = () => sendIntensity(Number($("intensitySlider").value));
+  $("btnStop").onclick = stopDevice;
+
+  $("btnSendPattern").onclick = () => {
+    sendPattern(Number($("modeSelect").value), Number($("levelSelect").value));
+  };
+
+  $("btnTestLow").onclick = () => sendIntensity(20);
+  $("btnTestMid").onclick = () => sendIntensity(50);
+
+  $("keepAliveToggle").onchange = (e) => {
+    if(e.target.checked) startKeepAlive(); else { stopKeepAlive(); log("续命已关闭", "warn"); }
+  };
+  $("pollToggle").onchange = (e) => {
+    if(e.target.checked){ if(mcpConnected) startPolling(); }
+    else { stopPolling(); log("轮询已关闭", "warn"); }
+  };
+  $("audioToggle").onchange = (e) => {
+    if(e.target.checked) startAudioKeepAlive(); else stopAudioKeepAlive();
+  };
+
+  let audioStarted = false;
+  document.body.addEventListener("click", () => {
+    if(!audioStarted && $("audioToggle").checked){
+      audioStarted = true;
+      startAudioKeepAlive();
+    }
+  }, { once: false });
+
+  startKeepAlive();
+
+  log("页面已加载，等待连接...", "dim");
+})();
+</script>
+
+</body>
+</html>
